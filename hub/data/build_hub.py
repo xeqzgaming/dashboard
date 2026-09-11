@@ -155,7 +155,11 @@ def main() -> int:
     target = HUB_DIR / "data" / "hub.js"
     target.parent.mkdir(parents=True, exist_ok=True)
     body = "window.__HUB__ = " + json.dumps(payload, indent=2, ensure_ascii=False) + ";\n"
-    target.write_text(body, encoding="utf-8")
+    # newline="
+": Python would otherwise translate to os.linesep (CRLF on
+    # Windows) and the generated payload would churn against the repo on every run.
+    target.write_text(body, encoding="utf-8", newline="
+")
     print(f"wrote {target} ({len(body)} bytes, {len(out)} dashboards)")
     return 0
 
