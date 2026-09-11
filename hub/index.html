@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERP Dashboards</title>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+  <link rel="stylesheet" href="styles.css?v=20260912o" />
+</head>
+<body>
+  <!-- Auth screen: checking → login (only password form in the estate) → denied.
+       Visible from first paint so dashboard content can never flash before the check. -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <img class="auth-logo" src="assets/logo.png" alt="" />
+      <div id="auth-checking">
+        <h1>Checking your session</h1>
+        <p class="auth-sub">One moment…</p>
+      </div>
+      <form id="auth-form" class="hidden" novalidate>
+        <h1>ERP Dashboards</h1>
+        <p class="auth-sub">Sign in with your company account</p>
+        <label class="auth-label" for="auth-email">Email</label>
+        <input id="auth-email" class="auth-input" type="email" placeholder="you@aaabed.com"
+               autocomplete="username" required />
+        <label class="auth-label" for="auth-password">Password</label>
+        <input id="auth-password" class="auth-input" type="password" placeholder="••••••••"
+               autocomplete="current-password" required />
+        <div id="auth-error" class="auth-error"></div>
+        <button id="auth-submit" class="auth-btn" type="submit">Sign in</button>
+      </form>
+      <div id="auth-denied" class="auth-denied hidden">
+        <div class="auth-denied-icon">⛔</div>
+        <h2>No dashboards assigned</h2>
+        <p>Your account <b id="auth-denied-email"></b> has no dashboards assigned to it yet.</p>
+        <p class="auth-sub">Contact your administrator to request access.</p>
+        <button id="auth-denied-back" class="auth-btn auth-btn-ghost" type="button">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="Logo" />
+      <div class="brand-text">
+        <h1>ERP Dashboards</h1>
+        <p>One place for every reporting dashboard</p>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="user-menu hidden" id="user-menu">
+        <button id="user-btn" class="user-btn pill" title="Account">👤</button>
+        <div class="user-dropdown hidden">
+          <div class="user-dropdown-head">
+            <span class="user-dropdown-avatar">👤</span>
+            <div>
+              <div class="user-dropdown-name" id="user-name">…</div>
+              <div class="user-dropdown-email" id="user-email">…</div>
+            </div>
+          </div>
+          <button type="button" id="theme-toggle" class="user-dropdown-item theme-item"></button>
+          <button type="button" id="logout" class="user-dropdown-item danger">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid" id="grid"></div>
+
+    <footer>
+      <span id="built-line">Hub built: …</span>
+      <span>Access is granted per dashboard by your administrator.</span>
+    </footer>
+  </div>
+
+  <script src="assets/supabase-js.min.js?v=20260912c"></script>
+  <script src="auth-config.js?v=20260912m"></script>
+  <script src="data/hub.js?v=20260912m"></script>
+  <script src="auth.js?v=20260912e"></script>
+  <script src="app.js?v=20260912n"></script>
+</body>
+</html>

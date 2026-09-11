@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Purchasing Dashboard</title>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+  <link rel="stylesheet" href="styles.css?v=20260912p" />
+</head>
+<body>
+  <!-- Access gate. No password field: sign-in happens at the hub.
+       Visible from first paint so dashboard content never flashes before the
+       authorisation check completes. -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <img class="auth-logo" src="assets/logo.png" alt="" />
+      <div id="auth-checking">
+        <h1>Checking access</h1>
+        <p class="auth-sub">One moment&#8230;</p>
+      </div>
+      <div id="auth-nosession" class="hidden">
+        <div class="auth-denied-icon">&#128274;</div>
+        <h2>Sign in required</h2>
+        <p>This dashboard is opened from the ERP dashboards hub.</p>
+        <p class="auth-sub">Sign in there and your session is handed over automatically.</p>
+        <a class="auth-btn auth-gohub" href="#">Sign in at the hub</a>
+      </div>
+      <div id="auth-denied" class="auth-denied hidden">
+        <div class="auth-denied-icon">&#9940;</div>
+        <h2>No access to this dashboard</h2>
+        <p>Your account <b id="auth-denied-email"></b> is not assigned to this dashboard.</p>
+        <p class="auth-sub">Ask your administrator, or sign in with a different account.</p>
+        <a class="auth-btn auth-gohub" href="#">Back to the hub</a>
+        <button id="auth-denied-back" class="auth-btn auth-btn-ghost" type="button">Sign out</button>
+      </div>
+      <div id="auth-error" class="auth-error"></div>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="Logo" />
+      <div class="brand-text">
+        <h1>Purchasing Dashboard</h1>
+        <p>Purchasing spend · PO &amp; receipts · Suppliers · Open commitments · Landed cost · Risk</p>
+        <p id="meta-time">Data refreshed: …</p>
+      </div>
+    </div>
+    <div class="meta">
+      <a id="hub-link" class="pill hub-btn" href="#">Hub</a>
+      <div class="user-menu" id="user-menu">
+        <button id="user-btn" class="user-btn pill" title="Account">👤</button>
+        <div class="user-dropdown hidden">
+          <div class="user-dropdown-head">
+            <span class="user-dropdown-avatar">👤</span>
+            <div>
+              <div class="user-dropdown-name" id="user-name">…</div>
+              <div class="user-dropdown-email" id="user-email">…</div>
+            </div>
+          </div>
+          <button type="button" id="theme-toggle" class="user-dropdown-item theme-item"></button>
+          <button type="button" id="change-password" class="user-dropdown-item">Change password</button>
+          <button type="button" id="logout" class="user-dropdown-item danger">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Change password modal -->
+  <div id="pw-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Change password</h2>
+      <form id="pw-form" novalidate>
+        <label class="auth-label" for="pw-current">Current password</label>
+        <input id="pw-current" class="auth-input" type="password" autocomplete="current-password" required />
+        <label class="auth-label" for="pw-new">New password</label>
+        <input id="pw-new" class="auth-input" type="password" autocomplete="new-password" required />
+        <label class="auth-label" for="pw-confirm">Confirm new password</label>
+        <input id="pw-confirm" class="auth-input" type="password" autocomplete="new-password" required />
+        <div id="pw-msg" class="auth-error"></div>
+        <div class="modal-actions">
+          <button type="button" id="pw-cancel" class="auth-btn auth-btn-ghost">Cancel</button>
+          <button type="submit" id="pw-submit" class="auth-btn">Update password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Filter / slicer bar -->
+  <section class="filters">
+    <div class="filter-group">
+      <label>Company Code</label>
+      <select id="f-cc" class="select">
+        <option value="">All companies</option>
+        <option value="1000">Company 1000</option>
+        <option value="6000">Company 6000</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Vendor</label>
+      <div class="ms" data-key="vendor" data-label="Vendor" data-search="true"></div>
+    </div>
+    <div class="filter-group">
+      <label>Spend Year</label>
+      <select id="f-year" class="select"></select>
+    </div>
+    <div class="filter-group grow">
+      <label>Search (Vendor / Material)</label>
+      <input id="f-search" class="text" type="text" placeholder="e.g. vendor name, material, PO…" />
+    </div>
+    <button id="reset" class="btn-reset">Reset</button>
+  </section>
+
+  <!-- KPI cards -->
+  <section class="kpis" id="kpis"></section>
+
+  <!-- Spend & purchasing charts -->
+  <section class="grid">
+    <div class="card span-2">
+      <div class="card-head"><h2>Goods-Receipt Spend Trend</h2><span class="hint">net received value (SAR) by posting month · per sales org</span></div>
+      <div class="chart-wrap tall"><canvas id="chart-spend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Delivery Performance</h2><span class="hint">GR postings vs. expected date</span></div>
+      <div class="chart-wrap"><canvas id="chart-delivery"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Landed Cost by Condition</h2><span class="hint">top condition types · value (SAR)</span></div>
+      <div class="chart-wrap tall"><canvas id="chart-konv-type"></canvas></div>
+    </div>
+    <div class="card span-2">
+      <div class="card-head"><h2>Landed Cost Trend by Condition Type</h2><span class="hint">customs, freight &amp; charges by month</span></div>
+      <div class="chart-wrap tall"><canvas id="chart-konv-month"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Open Commitment by Delivery Month</h2><span class="hint">open PO value by delivery month</span></div>
+      <div class="chart-wrap"><canvas id="chart-open-month"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Open Commitment by Vendor — Top 10</h2></div>
+      <div class="chart-wrap"><canvas id="chart-open-vendor"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Open Commitment by Material — Top 10</h2><span class="hint">open PO value by material</span></div>
+      <div class="chart-wrap"><canvas id="chart-open-material"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>GR Spend by Incoterms</h2><span class="hint">net received value (SAR) share</span></div>
+      <div class="chart-wrap"><canvas id="chart-incoterm"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>GR Spend by Strategy Group</h2><span class="hint">net received value (SAR) share</span></div>
+      <div class="chart-wrap"><canvas id="chart-strategy"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>GR Spend by Point of Destination</h2><span class="hint">destination port/city · top segments</span></div>
+      <div class="chart-wrap"><canvas id="chart-dest"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>GR Spend by Container Type</h2><span class="hint">ZCONTAINER · top types</span></div>
+      <div class="chart-wrap"><canvas id="chart-container"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>GR Spend by Freight Forwarder</h2><span class="hint">ZFREIGHT_FORW vendor · top forwarders</span></div>
+      <div class="chart-wrap"><canvas id="chart-forwarder"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>GR Spend by Broker</h2><span class="hint">ZBROKER vendor · top brokers</span></div>
+      <div class="chart-wrap"><canvas id="chart-broker"></canvas></div>
+    </div>
+  </section>
+
+  <!-- Incoming purchase orders (all open PO lines) -->
+  <section class="card table-card">
+    <div class="card-head">
+      <h2>Incoming Purchase Orders</h2>
+      <div class="table-actions">
+        <input id="po-search" class="text po-search" type="text" placeholder="Search PO / material…" />
+        <span id="po-count" class="hint"></span>
+        <button id="export-po-csv" class="btn-export">Export CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="po-table">
+        <thead><tr>
+          <th>PO</th><th>Item</th><th>Material</th><th>Description</th><th>Vendor</th>
+          <th class="num">Qty</th><th>UoM</th><th class="num">Value (SAR)</th>
+          <th>PO Date</th><th>Delivery</th><th>Status</th><th>Shipment Status</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button id="po-prev" class="btn-page">Prev</button>
+      <span id="po-page-info" class="hint"></span>
+      <button id="po-next" class="btn-page">Next</button>
+      <select id="po-page-size" class="select small"><option selected>25</option><option>50</option><option>100</option></select>
+    </div>
+  </section>
+
+  <!-- Vendor scorecard -->
+  <section class="card table-card">
+    <div class="card-head">
+      <h2>Supplier Scorecard</h2>
+      <div class="table-actions"><span id="vs-count" class="hint"></span>
+        <button id="export-vendor-csv" class="btn-export">Export CSV</button></div>
+    </div>
+    <div class="table-scroll">
+      <table id="vendor-table">
+        <thead><tr>
+          <th>Vendor</th><th>Name</th><th>Local</th><th class="num">Spend (SAR)</th><th class="num">Share %</th>
+          <th class="num">GR Postings</th><th class="num">POs</th><th class="num">Avg Lead (days)</th><th class="num">Avg PO Value (SAR)</th>
+          <th class="num">Open Value (SAR)</th>
+          <th class="num">Overdue Open (SAR)</th><th>Risk</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button id="vs-prev" class="btn-page">Prev</button>
+      <span id="vs-page-info" class="hint"></span>
+      <button id="vs-next" class="btn-page">Next</button>
+      <select id="vs-page-size" class="select small"><option selected>25</option><option>50</option><option>100</option></select>
+    </div>
+  </section>
+
+  <!-- Methodology & disclaimer (collapsible) -->
+  <section class="card table-card">
+    <details>
+      <summary class="card-head method-summary"><h2>Methodology, Sources &amp; Data Quality</h2><span class="hint">tap to expand</span></summary>
+      <div class="method-body" id="method-body"></div>
+    </details>
+  </section>
+
+  <script src="assets/supabase-js.min.js?v=20260912c"></script>
+  <script src="auth-config.js?v=20260912m"></script>
+  <script src="auth.js?v=20260912m"></script>
+  <script src="assets/chart.umd.min.js"></script>
+  <script src="data/data.js?v=20260910b"></script>
+  <script src="app.js?v=20260912p"></script>
+</body>
+</html>

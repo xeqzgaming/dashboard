@@ -1,0 +1,17 @@
+# Working screenshots / preview crops — not part of any site
+_preview/
+
+# Stale copies left behind by rewrites
+*.bak
+*.old
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Raw source databases
+*.duckdb

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Material Aging Dashboard</title>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+  <link rel="stylesheet" href="styles.css?v=20260912p" />
+</head>
+<body>
+  <!-- Access gate. No password field: sign-in happens at the hub.
+       Visible from first paint so dashboard content never flashes before the
+       authorisation check completes. -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <img class="auth-logo" src="assets/logo.png" alt="" />
+      <div id="auth-checking">
+        <h1>Checking access</h1>
+        <p class="auth-sub">One moment&#8230;</p>
+      </div>
+      <div id="auth-nosession" class="hidden">
+        <div class="auth-denied-icon">&#128274;</div>
+        <h2>Sign in required</h2>
+        <p>This dashboard is opened from the ERP dashboards hub.</p>
+        <p class="auth-sub">Sign in there and your session is handed over automatically.</p>
+        <a class="auth-btn auth-gohub" href="#">Sign in at the hub</a>
+      </div>
+      <div id="auth-denied" class="auth-denied hidden">
+        <div class="auth-denied-icon">&#9940;</div>
+        <h2>No access to this dashboard</h2>
+        <p>Your account <b id="auth-denied-email"></b> is not assigned to this dashboard.</p>
+        <p class="auth-sub">Ask your administrator, or sign in with a different account.</p>
+        <a class="auth-btn auth-gohub" href="#">Back to the hub</a>
+        <button id="auth-denied-back" class="auth-btn auth-btn-ghost" type="button">Sign out</button>
+      </div>
+      <div id="auth-error" class="auth-error"></div>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="Logo" />
+      <div class="brand-text">
+        <h1>Material Aging Dashboard</h1>
+        <p id="meta-time">Data refreshed: …</p>
+      </div>
+    </div>
+    <div class="meta">
+      <a id="hub-link" class="pill hub-btn" href="#">Hub</a>
+      <div class="user-menu" id="user-menu">
+        <button id="user-btn" class="user-btn pill" title="Account">👤</button>
+        <div class="user-dropdown hidden">
+          <div class="user-dropdown-head">
+            <span class="user-dropdown-avatar">👤</span>
+            <div>
+              <div class="user-dropdown-name" id="user-name">…</div>
+              <div class="user-dropdown-email" id="user-email">…</div>
+            </div>
+          </div>
+          <button type="button" id="theme-toggle" class="user-dropdown-item theme-item"></button>
+          <button type="button" id="change-password" class="user-dropdown-item">Change password</button>
+          <button type="button" id="logout" class="user-dropdown-item danger">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Change password modal -->
+  <div id="pw-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Change password</h2>
+      <form id="pw-form" novalidate>
+        <label class="auth-label" for="pw-current">Current password</label>
+        <input id="pw-current" class="auth-input" type="password" autocomplete="current-password" required />
+        <label class="auth-label" for="pw-new">New password</label>
+        <input id="pw-new" class="auth-input" type="password" autocomplete="new-password" required />
+        <label class="auth-label" for="pw-confirm">Confirm new password</label>
+        <input id="pw-confirm" class="auth-input" type="password" autocomplete="new-password" required />
+        <div id="pw-msg" class="auth-error"></div>
+        <div class="modal-actions">
+          <button type="button" id="pw-cancel" class="auth-btn auth-btn-ghost">Cancel</button>
+          <button type="submit" id="pw-submit" class="auth-btn">Update password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Filter / slicer bar -->
+  <section class="filters">
+    <div class="filter-group">
+      <label>Sales Org (VKORG)</label>
+      <select id="f-vkorg" class="select"></select>
+    </div>
+    <div class="filter-group">
+      <label>Plant</label>
+      <div class="ms" data-key="werks" data-label="Plant" data-search="true"></div>
+    </div>
+    <div class="filter-group">
+      <label>Vendor</label>
+      <div class="ms" data-key="mfrnr" data-label="Vendor" data-search="true"></div>
+    </div>
+    <div class="filter-group">
+      <label>Ext Material Group</label>
+      <select id="f-extwg" class="select"></select>
+    </div>
+    <div class="filter-group">
+      <label>Material Group</label>
+      <select id="f-matkl" class="select"></select>
+    </div>
+    <div class="filter-group">
+      <label>Aging Bucket</label>
+      <select id="f-bucket" class="select"></select>
+    </div>
+    <div class="filter-group grow">
+      <label>Search (Material / Desc / Batch)</label>
+      <input id="f-search" class="text" type="text" placeholder="e.g. 10000002, GELATINE, 2027.08…" />
+    </div>
+    <button id="reset" class="btn-reset">Reset</button>
+  </section>
+
+  <!-- KPI cards -->
+  <section class="kpis" id="kpis"></section>
+
+  <!-- Charts grid -->
+  <section class="grid">
+    <div class="card span-2">
+      <div class="card-head"><h2>Aging Exposure by Bucket</h2><span class="hint">Stock qty vs. valuation</span></div>
+      <div class="chart-wrap"><canvas id="chart-bucket"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Bucket Breakdown</h2><span class="hint">qty and value by aging bucket</span></div>
+      <div class="table-scroll"><table id="bucket-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Stock Value by Region</h2></div>
+      <div class="chart-wrap"><canvas id="chart-region"></canvas></div>
+    </div>
+    <div class="card span-2">
+      <div class="card-head"><h2>Top 15 Plants by Stock Value</h2></div>
+      <div class="chart-wrap"><canvas id="chart-plant"></canvas></div>
+    </div>
+    <div class="card span-1" id="mgrp-card">
+      <div class="card-head"><h2>Stock Value by Material Group</h2></div>
+      <div class="chart-wrap tall"><canvas id="chart-mgrp"></canvas></div>
+    </div>
+    <div class="card span-2" id="vendor-card">
+      <div class="card-head"><h2>Vendor Insight</h2></div>
+      <div class="chart-wrap tall vendor-wrap"><div class="vendor-inner"><canvas id="chart-vendor"></canvas></div></div>
+    </div>
+    <div class="card span-3">
+      <div class="card-head"><h2>Top Materials by Stock Value</h2>
+        <span class="hint">click a column to sort</span>
+        <div class="head-right">
+          <select id="f-topn" class="select small" title="Number of rows">
+            <option value="10">Top 10</option>
+            <option value="20">Top 20</option>
+            <option value="30">Top 30</option>
+            <option value="40">Top 40</option>
+            <option value="50">Top 50</option>
+          </select>
+          <button id="export-top-csv" class="btn-export">Export CSV</button>
+        </div>
+      </div>
+      <div class="table-scroll"><table id="topmat-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- Detail table -->
+  <section class="card table-card">
+    <div class="card-head">
+      <h2>Batch Detail</h2>
+      <div class="table-actions">
+        <span id="table-count" class="hint"></span>
+        <button id="export-csv" class="btn-export">Export CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="detail-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button id="prev" class="btn-page">Prev</button>
+      <span id="page-info"></span>
+      <button id="next" class="btn-page">Next</button>
+      <select id="page-size" class="select small">
+        <option>25</option><option selected>50</option><option>100</option><option>250</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Dead stock section -->
+  <section class="card table-card" id="dead-section">
+    <div class="card-head">
+      <h2>Slow Moving (no sales 6mo)</h2>
+      <div class="table-actions">
+        <span id="dead-count" class="hint"></span>
+        <button id="export-dead-csv" class="btn-export">Export CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="dead-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Goods disposal (fact_gdrn) section -->
+  <section class="card table-card">
+    <div class="card-head">
+      <h2>Goods Disposal</h2>
+      <div class="table-actions">
+        <span id="gdrn-count" class="hint"></span>
+        <button id="export-gdrn-csv" class="btn-export">Export CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="gdrn-table">
+        <thead><tr>
+          <th>Date</th><th>Plant</th><th>Material</th><th>Description</th><th>SLoc</th><th>Batch</th><th class="num">Qty</th><th>UoM</th><th class="num">Value</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="assets/supabase-js.min.js?v=20260912c"></script>
+  <script src="auth-config.js?v=20260912m"></script>
+  <script src="auth.js?v=20260912m"></script>
+  <script src="assets/chart.umd.min.js"></script>
+  <script src="data/data.js?v=20260910"></script>
+  <script src="app.js?v=20260912p"></script>
+</body>
+</html>
