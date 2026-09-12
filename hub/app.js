@@ -33,19 +33,6 @@ document.addEventListener('auth:ready', ev => {
   const svg = (name, cls) =>
     `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${HUB_ICONS[name] || ''}</svg>`;
 
-  function relTime(ts) {
-    if (!ts) return '';
-    const d = new Date(String(ts).replace(' ', 'T'));
-    if (isNaN(d)) return '';
-    const mins = Math.round((Date.now() - d.getTime()) / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return mins + ' min ago';
-    const hrs = Math.round(mins / 60);
-    if (hrs < 24) return hrs + ' h ago';
-    const days = Math.round(hrs / 24);
-    return days === 1 ? 'yesterday' : days + ' days ago';
-  }
-
   /* Where to send an allowed card.
 
      Everything is served from ONE origin: the hub at "/", each dashboard at
@@ -127,7 +114,6 @@ document.addEventListener('auth:ready', ev => {
     const ok = allowed.has(authKey);
     const accent = d.accent || 'var(--accent)';
     const ink = d.ink || '#0f141c';
-    const ago = relTime(d.refreshed);
     const localLink = (isFile && d.local && ok)
       ? `<a class="btn ghost" href="${esc(d.local)}">Open locally</a>` : '';
 
@@ -154,10 +140,9 @@ document.addEventListener('auth:ready', ev => {
           </div>
         </div>
         <p class="card-desc">${esc(d.desc || '')}</p>
-        <div class="card-meta">
-          <span class="pill">Data refreshed: ${esc(d.refreshed || 'unknown')}${ago ? ` · ${esc(ago)}` : ''}</span>
-          ${ok ? '' : '<span class="pill pill-locked">' + svg('lock', 'pill-lock') + 'Not assigned to your account</span>'}
-        </div>
+        ${ok ? '' : `<div class="card-meta">
+            <span class="pill pill-locked">${svg('lock', 'pill-lock')}Not assigned to your account</span>
+          </div>`}
         <div class="card-foot">
           <span class="card-actions">
             ${localLink}
