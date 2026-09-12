@@ -140,9 +140,6 @@ document.addEventListener('auth:ready', ev => {
           </div>
         </div>
         <p class="card-desc">${esc(d.desc || '')}</p>
-        ${ok ? '' : `<div class="card-meta">
-            <span class="pill pill-locked">${svg('lock', 'pill-lock')}Not assigned to your account</span>
-          </div>`}
         <div class="card-foot">
           <span class="card-actions">
             ${localLink}
